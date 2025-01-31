@@ -1,4 +1,4 @@
 chainlit==1.2.0
-langchain-groq
+langchain-openai
 httpx==0.23.0
 pyngrok
