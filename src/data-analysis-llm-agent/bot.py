@@ -10,7 +10,7 @@ logging.basicConfig(level=logging.INFO)
 # Define DeepSeek Model
 deepseek_model = ChatOpenAI(
     model="deepseek-ai/DeepSeek-R1-Distill-Qwen-7B",
-    api_key=os.getenv("OPENAI_API_KEY"),
+    api_key=os.environ.get("OPENAI_API_KEY"),
     temperature=0,
     seed=1,
     base_url="http://54.174.178.103:5010/v1"
