@@ -8,8 +8,8 @@ from langchain_openai import ChatOpenAI
 logging.basicConfig(level=logging.INFO)
 
 # Define DeepSeek Model
-deepseek_model = ChatOpenAI(
-    model="deepseek-ai/DeepSeek-R1-Distill-Qwen-7B",
+model="deepseek-ai/DeepSeek-R1-Distill-Qwen-7B"
+client = ChatOpenAI(
     api_key=os.environ.get("OPENAI_API_KEY"),
     temperature=0,
     seed=1,
