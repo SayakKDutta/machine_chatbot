@@ -3,15 +3,17 @@ import logging
 import os
 import json
 
-logging.info(f"User message")
+from langchain_openai import ChatOpenAI
 
-import httpx
-from groq import AsyncGroq
+logging.basicConfig(level=logging.INFO)
 
-
-model = "llama3-groq-70b-8192-tool-use-preview"
-client = AsyncGroq(
-    api_key=os.environ.get("Groq_API_KEY")
+# Define DeepSeek Model
+deepseek_model = ChatOpenAI(
+    model="deepseek-ai/DeepSeek-R1-Distill-Qwen-7B",
+    api_key=os.getenv("OPENAI_API_KEY"),
+    temperature=0,
+    seed=1,
+    base_url="http://54.174.178.103:5010/v1"
 )
 
 # Main chatbot class
@@ -26,54 +28,44 @@ class ChatBot:
             self.messages.append({"role": "system", "content": system})
 
     async def __call__(self, message):
-        self.messages.append({"role": "user", "content": f"""{message}"""})
+        self.messages.append({"role": "user", "content": message})
         response_message = await self.execute()
-        # for function call sometimes this can be empty
-        if response_message.content:
-            self.messages.append({"role": "assistant", "content": response_message.content})
+        
+        if response_message["content"]:
+            self.messages.append({"role": "assistant", "content": response_message["content"]})
 
         logging.info(f"User message: {message}")
-        logging.info(f"Assistant response: {response_message.content}")
+        logging.info(f"Assistant response: {response_message['content']}")
 
         return response_message
 
     async def execute(self):
-        #print(self.messages)
-        completion = await client.chat.completions.create(
-            model=model,
-            messages=self.messages,
-            tools = self.tools
-        )
-        print(completion)
-        assistant_message = completion.choices[0].message
-
-        return assistant_message
+        response = await deepseek_model.agenerate(messages=self.messages)
+        assistant_message = response.generations[0][0].text  # Extracting generated text
+        
+        return {"role": "assistant", "content": assistant_message}
 
     async def call_function(self, tool_call):
-        function_name = tool_call.function.name
+        function_name = tool_call["function"]["name"]
         function_to_call = self.tool_functions[function_name]
-        function_args = json.loads(tool_call.function.arguments)
+        function_args = json.loads(tool_call["function"]["arguments"])
+
         logging.info(f"Calling {function_name} with {function_args}")
         function_response = await function_to_call(**function_args)
 
         return {
-            "tool_call_id": tool_call.id,
             "role": "tool",
             "name": function_name,
             "content": function_response,
         }
 
     async def call_functions(self, tool_calls):
-
-        # Use asyncio.gather to make function calls in parallel
         function_responses = await asyncio.gather(
             *(self.call_function(tool_call) for tool_call in tool_calls)
-            )
+        )
 
-        # Extend conversation with all function responses
         responses_in_str = [{**item, "content": str(item["content"])} for item in function_responses]
 
-        # Log each tool call object separately
         for res in function_responses:
             logging.info(f"Tool Call: {res}")
 
