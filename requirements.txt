@@ -1,5 +1,6 @@
 chainlit==1.2.0
 langchain-openai
+langchain-groq
 httpx==0.23.0
 pyngrok
 plotly
